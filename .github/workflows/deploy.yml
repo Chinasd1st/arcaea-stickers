@@ -1,0 +1,51 @@
+name: 部署项目
+
+on:
+  push:
+    branches:
+      - main   # 推送到 main 分支时触发
+
+permissions:
+  contents: write
+
+jobs:
+  deploy-gh-pages:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 拉取仓库代码
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # 如果有子模块，取消下面的注释
+          # submodules: true
+
+      # 设置 Node.js 环境
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18   # 根据项目实际情况修改
+          cache: npm
+
+      # 安装依赖
+      - name: 安装依赖
+        run: |
+          corepack enable || true
+          npm ci --legacy-peer-deps
+
+      # 构建项目
+      - name: 构建项目
+        env:
+          NODE_OPTIONS: --max_old_space_size=8192
+        run: |
+          npm run build
+          > dist/.nojekyll   # 避免 GitHub Pages 处理 Jekyll
+
+      # 部署到 GitHub Pages
+      - name: 部署到 GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages   # 部署目标分支
+          folder: dist       # 构建输出目录
+          clean: true
