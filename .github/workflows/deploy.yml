@@ -18,14 +18,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # 如果有子模块，取消下面的注释
-          # submodules: true
 
       # 设置 Node.js 环境
       - name: 设置 Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18   # 根据项目实际情况修改
+          node-version: 18
           cache: npm
 
       # 安装依赖
@@ -40,12 +38,12 @@ jobs:
           NODE_OPTIONS: --max_old_space_size=8192
         run: |
           npm run build
-          > dist/.nojekyll   # 避免 GitHub Pages 处理 Jekyll
+          > build/.nojekyll   # 注意：改成 build 而不是 dist
 
       # 部署到 GitHub Pages
       - name: 部署到 GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages   # 部署目标分支
-          folder: dist       # 构建输出目录
+          folder: build      # CRA 的构建输出目录是 build
           clean: true
