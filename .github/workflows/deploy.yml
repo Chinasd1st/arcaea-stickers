@@ -3,7 +3,7 @@ name: 部署项目
 on:
   push:
     branches:
-      - main   # 推送到 main 分支时触发
+      - main
 
 permissions:
   contents: write
@@ -13,37 +13,45 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 拉取仓库代码
+      # 1. 拉取仓库代码
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 设置 Node.js 环境
+      # 2. 设置 Node.js 环境
       - name: 设置 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: npm
 
-      # 安装依赖
+      # 3. 安装依赖
       - name: 安装依赖
         run: |
           corepack enable || true
           npm ci --legacy-peer-deps
 
-      # 构建项目
+      # 4. 自动写入 homepage
+      - name: 配置 homepage
+        run: |
+          REPO_NAME=$(basename $GITHUB_REPOSITORY)    # 取仓库名
+          USER_NAME=$(echo $GITHUB_REPOSITORY | cut -d'/' -f1) # 取用户名
+          npx json -I -f package.json -e "this.homepage='https://${USER_NAME}.github.io/${REPO_NAME}'"
+          cat package.json | grep homepage
+
+      # 5. 构建项目
       - name: 构建项目
         env:
           NODE_OPTIONS: --max_old_space_size=8192
         run: |
           npm run build
-          > build/.nojekyll   # 注意：改成 build 而不是 dist
+          > build/.nojekyll
 
-      # 部署到 GitHub Pages
+      # 6. 部署到 GitHub Pages
       - name: 部署到 GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages   # 部署目标分支
-          folder: build      # CRA 的构建输出目录是 build
+          folder: build      # CRA 输出目录
           clean: true
