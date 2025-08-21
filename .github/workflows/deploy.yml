@@ -1,57 +1,41 @@
-name: 部署项目
-
+name: Build and Deploy Github Pages
+permissions:
+  contents: write
+  pages: write
+  id-token: write
 on:
   push:
     branches:
-      - main
-
-permissions:
-  contents: write
-
+      - main # Set a branch to deploy
 jobs:
-  deploy-gh-pages:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      # 1. 拉取仓库代码
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3 # If you're using actions/checkout@v2 you must set persist-credentials to false in most cases for the deployment to work correctly.
         with:
-          fetch-depth: 0
-
-      # 2. 设置 Node.js 环境
-      - name: 设置 Node.js
-        uses: actions/setup-node@v4
+          persist-credentials: false
+      - name: Setup Node.js & Cache Dependencies ⚡️
+        uses: actions/setup-node@v3
         with:
-          node-version: 18
-          cache: npm
+          node-version: 20
+          # 不缓存 node modules, 没啥提升, 时间还长了
+          # cache: 'npm'
+          # cache-dependency-path: lock.json
 
-      # 3. 安装依赖
-      - name: 安装依赖
+      - name: Install and Build 🔧 # This example project is built using npm and outputs the result to the 'build' folder. Replace with the commands required to build your project, or remove this step entirely if your site is pre-built.
         run: |
-          corepack enable || true
-          npm ci --legacy-peer-deps
-
-      # 4. 自动写入 homepage
-      - name: 配置 homepage
-        run: |
-          REPO_NAME=$(basename $GITHUB_REPOSITORY)    # 取仓库名
-          USER_NAME=$(echo $GITHUB_REPOSITORY | cut -d'/' -f1) # 取用户名
-          npx json -I -f package.json -e "this.homepage='https://${USER_NAME}.github.io/${REPO_NAME}'"
-          cat package.json | grep homepage
-
-      # 5. 构建项目
-      - name: 构建项目
-        env:
-          NODE_OPTIONS: --max_old_space_size=8192
-        run: |
+          # export PIC_DEPLOY_DIR=/sekai-stickers
+          npm install
           npm run build
-          > build/.nojekyll
-
-      # 6. 部署到 GitHub Pages
-      - name: 部署到 GitHub Pages
+          echo "Clone gh-pages 分支后, 通过 HTTP Server 服务即可. 必须在根目录." > ./build/readme.md
+      - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: gh-pages   # 部署目标分支
-          folder: build      # CRA 输出目录
-          clean: true
+          branch: gh-pages # The branch the action should deploy to.
+          folder: build # The folder the action should deploy.
+          clean: true # Automatically remove deleted files from the deploy branch
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: ./build
